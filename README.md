@@ -26,4 +26,7 @@ Personal fork of haste-server to include several modifications for my needs
  - Run `npm start` from the base directory
 
 #### Running Service (Production)
- - Configure init script to be run by system
+ - Copy one of the sample init scripts in the "init" folder to the appropriate location on your system. Adapt to suit your configuration.
+  - If your distribution uses systemd, copy init/haste-server.service to /etc/systemd/system/haste-server.service. Tested to work with CentOS 7.
+  - If your distribution uses sysvinit, copy init/haste-server.sysv to /etc/init.d/haste-server. Tested to work with CentOS 6.
+ - Both scripts assume that haste-server is installed in /usr/local/haste-bin and a dedicated 'haste' user account is used to run the service.
