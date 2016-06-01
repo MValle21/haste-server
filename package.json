@@ -16,7 +16,7 @@
   "dependencies": {
     "winston": "0.7.3",
     "connect": "3.1.1",
-    "connect-route": "git://github.com/neandrake/connect-route.git#bc44be0fac3e7ccda51221c07b428a5f3594bd06",
+    "connect-route": "*",
     "st": "0.5.1",
     "then-redis": "0.3.12",
     "uglify-js": "2.4.15",
