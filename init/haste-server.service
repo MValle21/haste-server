@@ -1,0 +1,22 @@
+# CentOS systemd service for haste-server
+# 
+# This service file assumes that you'll install haste-server in
+# /usr/local/haste-server and that it will be run by a dedicated
+# 'haste' user account. Adapt it to suit your needs.
+
+[Unit]
+Description=Haste server
+
+[Service]
+WorkingDirectory=/usr/local/haste-server
+ExecStart=/usr/bin/node /usr/local/haste-server/server.js
+# Restart the service automatically after 10 seconds if it crashes.
+Restart=always 
+RestartSec=10 
+User=haste
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=haste-server
+
+[Install]
+WantedBy=multi-user.target
