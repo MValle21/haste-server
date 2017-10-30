@@ -14,13 +14,16 @@
   },
   "main": "haste",
   "dependencies": {
-    "winston": "0.7.3",
-    "connect": "3.1.1",
+    "connect-ratelimit": "0.0.7",
     "connect-route": "0.1.5",
-    "st": "0.5.1",
-    "then-redis": "0.3.12",
+    "connect": "3.4.1",
+    "st": "1.1.0",
+    "winston": "0.7.3",
+    "redis-url": "0.1.0",
+    "redis": "0.8.1",
     "uglify-js": "2.4.15",
     "busboy": "0.2.8",
+    "pg": "4.1.1",
     "mime": "1.2.11",
     "spirc": "0.1.4"
   },
@@ -30,8 +33,8 @@
   },
   "bundledDependencies": [],
   "engines": {
-    "node": "0.10.31+",
-    "npm": "1.4.24+"
+    "node": "8.1.4",
+    "npm": "5.2.0"
   },
   "bin": {
     "haste-server": "./server.js"

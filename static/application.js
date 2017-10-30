@@ -1,3 +1,5 @@
+/* global $, hljs, window, document */
+
 ///// represents a single document
 
 var haste_document = function() {
@@ -105,9 +107,15 @@ haste_document.prototype.load = function(key, haste, callback, lang) {
           haste.$preview.html('<img src="/docs/' + metadata.key + '"/>');
         }
       }
+      callback({
+        value: high.value,
+        key: key,
+        language: high.language || lang,
+        lineCount: res.data.split('\n').length
+      });
     },
-    error: function(err) {
-      haste.showMessage(err, 'error');
+    error: function() {
+      callback(false);
     }
   });
 };
@@ -132,7 +140,7 @@ haste_document.prototype.save = function(data, callback) {
         value: high.value,
         key: res.key,
         language: high.language,
-        lineCount: data.split("\n").length
+        lineCount: data.split('\n').length
       });
     },
     error: function(res) {
@@ -317,9 +325,10 @@ haste.extensionMap = {
   rb: 'ruby', py: 'python', pl: 'perl', php: 'php', scala: 'scala', go: 'go',
   xml: 'xml', html: 'xml', htm: 'xml', css: 'css', js: 'javascript', vbs: 'vbscript',
   lua: 'lua', pas: 'delphi', java: 'java', cpp: 'cpp', cc: 'cpp', m: 'objectivec',
-  vala: 'vala', cs: 'cs', sql: 'sql', sm: 'smalltalk', lisp: 'lisp', ini: 'ini',
+  vala: 'vala', sql: 'sql', sm: 'smalltalk', lisp: 'lisp', ini: 'ini',
   diff: 'diff', bash: 'bash', sh: 'bash', tex: 'tex', erl: 'erlang', hs: 'haskell',
-  md: 'markdown', txt: '', coffee: 'coffee', json: 'javascript'
+  md: 'markdown', txt: '', coffee: 'coffee', json: 'javascript',
+  swift: 'swift'
 };
 
 // Look up the extension preferred for a type
@@ -495,14 +504,14 @@ haste.prototype.configureButton = function(options) {
     }
   });
   // Show the label
-  options.$where.mouseenter(function(evt) {
+  options.$where.mouseenter(function() {
     $('#box3 .label').text(options.label);
     $('#box3 .shortcut').text(options.shortcutDescription || '');
   });
   // Hide the label
-  options.$where.mouseleave(function(evt) {
-    $('#box3 .label').html('&nbsp;');
-    $('#box3 .shortcut').html('&nbsp;');
+  options.$where.mouseleave(function() {
+    $('#box3').hide();
+    $('#pointer').hide();
   });
 };
 
@@ -549,7 +558,7 @@ $(function() {
       // For browsers like Internet Explorer
       if (document.selection) {
         this.focus();
-        sel = document.selection.createRange();
+        var sel = document.selection.createRange();
         sel.text = myValue;
         this.focus();
       }

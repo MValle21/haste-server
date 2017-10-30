@@ -204,6 +204,8 @@ textarea {
 #box2 .function.enabled.irc { background-position: -153px center; }
 #box2 .function.enabled.irc:hover { background-position: -153px bottom; }
 
+#box2 .button-picture { border-width: 0; font-size: inherit; }
+
 #messages {
 	position:fixed;
 	top:0px;
@@ -222,3 +224,4 @@ textarea {
 #messages li.error {
 	background:rgba(102,8,0,0.8);
 }
+

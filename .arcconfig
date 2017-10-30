@@ -1,0 +1,7 @@
+{
+  "project.name"          :  "haste-server",
+  "phabricator.uri"       :  "https://repo.mimsoftware.com/",
+  "repository.callsign"   :  "HASTE",
+  "history.immutable"     :  false,
+  "arc.land.onto.default" :  "master"
+}
