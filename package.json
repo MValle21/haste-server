@@ -14,19 +14,18 @@
   },
   "main": "haste",
   "dependencies": {
-    "winston": "0.7.3",
-    "connect": "3.1.1",
+    "winston": "^2.4.0",
+    "connect": "^3.6.5",
     "connect-route": "0.1.5",
-    "st": "0.5.1",
-    "then-redis": "0.3.12",
-    "uglify-js": "2.4.15",
-    "busboy": "0.2.8",
-    "mime": "1.2.11",
-    "spirc": "0.1.4"
+    "st": "^1.2.2",
+    "ioredis": "^3.2.1",
+    "uglify-js": "^3.1.6",
+    "busboy": "^0.2.14",
+    "mime": "^2.0.3",
+    "spirc": "^0.1.5"
   },
   "devDependencies": {
-    "mocha": "*",
-    "should": "*"
+    "mocha": "*"
   },
   "bundledDependencies": [],
   "engines": {

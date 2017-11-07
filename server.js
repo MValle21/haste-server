@@ -1,33 +1,28 @@
-var http = require('http');
-var url = require('url');
-var fs = require('fs');
+const http = require('http');
+const url = require('url');
+const fs = require('fs');
 
-var winston = require('winston');
-var connect = require('connect');
-var uglify = require('uglify-js');
+const winston = require('winston');
+const connect = require('connect');
+const uglify = require('uglify-js');
 
-var connectRoute = require('connect-route');
-var st = require('st');
+const connectRoute = require('connect-route');
+const st = require('st');
 
-var DocumentHandler = require('./lib/document_handler');
-var IrcHandler = require('./lib/irchandler');
+const DocumentHandler = require('./lib/document_handler');
+const IrcHandler = require('./lib/irchandler');
 
 // Load the configuration and set some defaults
-var config = JSON.parse(fs.readFileSync('./config.js', 'utf8'));
+let config = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
 config.port = process.env.PORT || config.port || 7777;
 config.host = process.env.HOST || config.host || 'localhost';
 
 // Set up the logger
 if (config.logging) {
-  try {
-    winston.remove(winston.transports.Console);
-  } catch(er) { }
-  var detail, type;
-  for (var i = 0; i < config.logging.length; i++) {
-    detail = config.logging[i];
-    type = detail.type;
-    delete detail.type;
-    winston.add(winston.transports[type], detail);
+  winston.clear();
+  for (let configObj of config.logging) {
+    let { type, ...options } = configObj;
+    winston.add(winston.transports[type], options);
   }
 }
 
@@ -39,16 +34,18 @@ if (!config.storage.type) {
   config.storage.type = 'redis';
 }
 
-var Store = require('./lib/document_stores/' + config.storage.type);
-var preferredStore = new Store(config.storage);
+const Store = require('./lib/document_stores/' + config.storage.type);
+const preferredStore = new Store(config.storage);
+
+preferredStore.connect();
 
 // Pick up a key generator
-var pwOptions = config.keyGenerator || {};
+let pwOptions = config.keyGenerator || {};
 pwOptions.type = pwOptions.type || 'keygen';
-var gen = require('./lib/key_generators/' + pwOptions.type);
-var keyGenerator = new gen(pwOptions);
+const gen = require('./lib/key_generators/' + pwOptions.type);
+const keyGenerator = new gen(pwOptions);
 
-var ircHandler;
+let ircHandler;
 if (config.irc) {
   config.irc.log = {
     info: function(){},
@@ -63,7 +60,7 @@ if (config.irc) {
 }
 
 // Configure the document handler
-var documentHandler = new DocumentHandler({
+const documentHandler = new DocumentHandler({
   store: preferredStore,
   maxLength: config.maxLength,
   keyLength: config.keyLength,
@@ -72,105 +69,103 @@ var documentHandler = new DocumentHandler({
 
 // Compress the static javascript assets
 if (config.recompressStaticAssets) {
-  var list = fs.readdirSync('./static');
-  for (var i = 0; i < list.length; i++) {
-    var item = list[i];
-    if ((item.indexOf('.js') === item.length - 3) && (item.indexOf('.min.js') === -1)) {
-      dest = item.substring(0, item.length - 3) + '.min' + item.substring(item.length - 3);
-      var minified = uglify.minify('./static/' + item);
-      fs.writeFileSync('./static/' + dest, minified.code, 'utf8');
-      winston.info('compressed ' + item + ' into ' + dest);
+  let fileNames = fs.readdirSync('./static');
+  for (let srcFileName of fileNames) {
+    let matches = /^([^.]+)\.js$/.exec(srcFileName);
+    if (matches != null) {
+      let srcPath = `./static/${srcFileName}`;
+      let destPath = `./static/${matches[1]}.min.js`;
+      let minified = uglify.minify(fs.readFileSync(srcPath, "utf8"));
+      if (minified.error) {
+        winston.error("error compressing", srcPath, ":", minified.error);
+      } else {
+        fs.writeFileSync(destPath, minified.code, 'utf8');
+        winston.info('compressed ' + srcPath + ' into ' + destPath);
+      }
     }
   }
 }
 
 // Send the static documents into the preferred store, skipping expirations
-var path, data;
-for (var name in config.documents) {
-  path = config.documents[name];
+for (let name in config.documents) {
+  let path = config.documents[name];
 
-  var storeStaticDoc = function() {
-    data = fs.readFileSync(path, 'utf8');
+  let storeStaticDoc = () => {
+    let data = fs.readFileSync(path, 'utf8');
     if (data) {
-      var syntax = '';
-      var extIndex = path.lastIndexOf('.');
+      let syntax = '';
+      let extIndex = path.lastIndexOf('.');
       if (extIndex > -1 && extIndex < path.length - 1) {
         syntax = path.substring(extIndex + 1);
       }
-      var doc = {
+      let info = {
         name: name,
+        key: name,
         size: data.length,
         mimetype: 'text/plain',
-        syntax: syntax
+        syntax: syntax,
+        encoding: 'utf-8',
+        time: new Date().getTime()
       };
-      // we're not actually using http requests to initialize the static docs
-      // so use a fake response object to determine finished success/failure
-      var nonHttpResponse = {
-        writeHead: function(code, misc) {
-          if (code == 200) {
-            winston.debug('loaded static document', { file: name, path: path });
-          } else {
-            winston.warn('failed to store static document', { file: name, path: path });
-          }
-        },
-        end: function(){}
-      };
-      documentHandler._setStoreObject(doc, data, nonHttpResponse, true);
-    }
-    else {
-      winston.warn('failed to load static document', { name: name, path: path });
+      documentHandler._setStoreObject(info, data, { isStatic: true })
+        .then(() => winston.debug('loaded static document', { name, path }))
+        .catch(err => winston.error('failed to store static document', { name, path, err }));
+    } else {
+      winston.error('failed to load static document', { name, path });
     }
   };
 
-  var nonHttpResponse = {writeHead: function(){},end: function(){}};
-  documentHandler._getStoreObject(name, true, nonHttpResponse, function(err, doc) {
-    if (err) {
-      storeStaticDoc();
-    }
-    else {
-      winston.verbose('not storing static document as it already exists', {name: name});
-    }
-  });
+  documentHandler._getStoreObject(name, { isStatic: true })
+    .then(storeObj => winston.verbose('not storing static document as it already exists', { name }))
+    .catch(err => storeStaticDoc());
 }
 
-var staticServe = st({
+const staticServe = st({
   path: './static',
   url: '/',
   index: 'index.html',
   passthrough: true
 });
 
-var apiServe = connectRoute(function(router) {
+const apiServe = connectRoute(router => {
   // add documents
-  router.post('/docs', function(request, response, next) {
+  router.post('/docs', (request, response, next) => {
+    winston.debug("POST /docs");
     return documentHandler.handlePost(request, response);
   });
   // get documents
-  router.get('/docs/:id', function(request, response, next) {
-    var skipExpire = !!config.documents[request.params.id];
-    return documentHandler.handleGet(request, response, skipExpire);
+  router.get('/docs/:id', (request, response, next) => {
+    let id = request.params.id;
+    winston.debug(`GET /docs/${id}`);
+    let extPos = id.lastIndexOf('.');
+    let isStaticDoc = extPos >= 0 && id.substring(0, extPos) in config.documents;
+    return documentHandler.handleGet(request, response, { setExpire: !isStaticDoc });
   });
   // get document metadata
-  router.head('/docs/:id', function(request, response, next) {
+  router.head('/docs/:id', (request, response, next) => {
+    winston.debug(`HEAD /docs/${request.params.id}`);
     return documentHandler.handleHead(request, response);
   });
   // get recent documents
-  router.get('/recent', function(request, response, next) {
+  router.get('/recent', (request, response, next) => {
+    winston.debug("GET /recent");
     return documentHandler.handleRecent(request, response);
   });
   // get metadata for keys
-  router.get('/keys/:keys', function(request, response, next) {
+  router.get('/keys/:keys', (request, response, next) => {
+    winston.debug(`GET /keys/${request.params.keys}`);
     return documentHandler.handleKeys(request, response);
   });
-  // notify IRC of document
-  router.get('/irc/privmsg/:chan/:id', function(request, response, next) {
-    if (ircHandler) {
+  if (ircHandler) {
+    // notify IRC of document
+    router.get('/irc/privmsg/:chan/:id', (request, response, next) => {
       return ircHandler.handleNotify(request, response);
-    }
-  });
+    });
+  }
   // if the previous static-serving module didn't respond to the resource, 
   // forward to next with index.html and the web client application will request the doc based on the url
-  router.get('/:id', function(request, response, next) {
+  router.get('/:id', (request, response, next) => {
+    winston.debug(`GET /${request.params.id} - redirecting to /index.html`);
     // redirect to index.html, also clearing the previous 'st' module 'sturl' field generated
     // by the first staticServe module. if sturl isn't cleared out then this new request.url is not
     // looked at again.
@@ -180,13 +175,13 @@ var apiServe = connectRoute(function(router) {
   });
 });
 
-var staticRemains = st({
+const staticRemains = st({
   path: './static',
   url: '/',
   passthrough: false
 });
 
-var app = connect();
+const app = connect();
 app.use(staticServe);
 app.use(apiServe);
 app.use(staticRemains);

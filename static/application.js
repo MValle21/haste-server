@@ -169,9 +169,9 @@ var haste = function(appName, options) {
     dataType: 'json',
     onUploadSuccess: function(id, data) {
       var ext = '';
-      var extIndex = data.metadata.name.lastIndexOf('.');
+      var extIndex = data.name.lastIndexOf('.');
       if (extIndex > -1) {
-        ext = data.metadata.name.substring(extIndex);
+        ext = data.name.substring(extIndex);
       }
       window.location.assign('/' + data.key + ext);
     },

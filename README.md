@@ -12,13 +12,14 @@ Personal fork of haste-server to include several modifications for my needs
 
 ## Installation
 ### Prerequisites
- - Node: 0.10.31+
+ - Node: 8.x+ - Tested with 8.7.0
  - NPM: 1.4.24+
  - Redis: Tested with 2.8.19, presumably anything from 2.0+ works, no idea about 1.x
+ - Python: Works with Python 2, didn't try Python 3
 
 ### Setup
  - Clone the repository for the changeset/release desired
- - Copy `config.sample.js` to `config.js` and modify per your needs.
+ - Copy `config.sample.json` to `config.json` and modify per your needs.
  - Run `npm install` from the base directory
  - Ensure redis-server is running
 

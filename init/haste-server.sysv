@@ -4,7 +4,7 @@
 #
 # haste is run via npm start in the /usr/local/haste-server folder
 # by a dedicated 'haste' user. Adapt to suit your needs.
-# config: /usr/local/haste-server/config.js
+# config: /usr/local/haste-server/config.json
 #
 # chkconfig: 345 85 15
 # description: An open source pastebin
